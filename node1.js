@@ -17,6 +17,7 @@ import { initIPFSInstance } from './ipfs/init.js';
   const orbitdb = await createOrbitDB({
     ipfs,
     directory: "./orbitdb-node1",
+    id: 'node1'
   });
 
   // Create / Open a database. Defaults to db type "events".

@@ -5,10 +5,11 @@ import { initIPFSInstance } from './ipfs/init.js';
 
 // Node1 address
 const NODE1_ADDR = multiaddr(
-  "/ip4/127.0.0.1/tcp/4002/p2p/12D3KooWMVJfZrMwvKUD9sjP3q1mCuDUZ7je2tXZmdxsspVzUcfK",
+  "/ip4/127.0.0.1/tcp/4002/p2p/12D3KooWBf8QxggD7bWvdSyuZ5yxFKBY7EZ3eN7izNKkHEDgYqEB",
 );
+// OrbitDB address by Node1
 const ORBITDB_ADDRESS =
-  "/orbitdb/zdpuArNWtbrRaNF82nr9KoLGqmM2bnqkeLL8yFzM84EGq9wZS";
+  "/orbitdb/zdpuAy7oqc2bH8J8xgns27ne2vKWZMzXpmjwhcwAKk7WCea1u";
 
 async function waitForPeers(ipfs, minPeers = 1) {
   return new Promise((resolve) => {
@@ -50,6 +51,7 @@ async function waitForPeers(ipfs, minPeers = 1) {
   const orbitdb = await createOrbitDB({
     ipfs,
     directory: "./orbitdb-node2",
+    id: "node2"
   });
 
   console.log(`📡 [Node2] 正在根据地址打开远程数据库: ${ORBITDB_ADDRESS}`);
