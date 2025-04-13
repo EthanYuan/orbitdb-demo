@@ -1,44 +1,14 @@
-import { createHelia } from "helia";
 import { createOrbitDB } from "@orbitdb/core";
-import { gossipsub } from "@chainsafe/libp2p-gossipsub";
-import { identify } from "@libp2p/identify";
-import { createLibp2p } from "libp2p";
-import { webSockets } from "@libp2p/websockets";
-import { tcp } from "@libp2p/tcp";
-import { noise } from "@chainsafe/libp2p-noise";
-import { yamux } from "@chainsafe/libp2p-yamux";
 import readline from "readline";
 import { multiaddr } from "@multiformats/multiaddr";
-import { LevelBlockstore } from "blockstore-level";
-import { mdns } from "@libp2p/mdns";
+import { initIPFSInstance } from './ipfs/init.js';
 
+// Node1 address
 const NODE1_ADDR = multiaddr(
-  "/ip4/127.0.0.1/tcp/4002/p2p/12D3KooWBqqpwRVqX3cNxeLMeM69ozZpK5YjFFpWNTPMhKVvooox",
+  "/ip4/127.0.0.1/tcp/4002/p2p/12D3KooWMVJfZrMwvKUD9sjP3q1mCuDUZ7je2tXZmdxsspVzUcfK",
 );
 const ORBITDB_ADDRESS =
   "/orbitdb/zdpuArNWtbrRaNF82nr9KoLGqmM2bnqkeLL8yFzM84EGq9wZS";
-
-const Libp2pOptions = {
-  peerDiscovery: [mdns()],
-  transports: [tcp(), webSockets()],
-  connectionEncrypters: [noise()],
-  streamMuxers: [yamux()],
-  addresses: {
-    listen: ["/ip4/0.0.0.0/tcp/0", "/ip4/0.0.0.0/tcp/0/ws"],
-  },
-  services: {
-    pubsub: gossipsub({
-      allowPublishToZeroTopicPeers: true,
-    }),
-    identify: identify(),
-  },
-};
-
-const initIPFSInstance = async (dir) => {
-  const blockstore = new LevelBlockstore(dir);
-  const libp2p = await createLibp2p(Libp2pOptions);
-  return createHelia({ libp2p, blockstore });
-};
 
 async function waitForPeers(ipfs, minPeers = 1) {
   return new Promise((resolve) => {
@@ -75,7 +45,6 @@ async function waitForPeers(ipfs, minPeers = 1) {
     console.log(`  - ${addr.toString()}`);
   });
 
-  // ✅ 等待至少一个 peer 再打开数据库
   await waitForPeers(ipfs, 1);
 
   const orbitdb = await createOrbitDB({
