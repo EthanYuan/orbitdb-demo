@@ -11,8 +11,8 @@ import { noise } from "@chainsafe/libp2p-noise";
 import { yamux } from "@chainsafe/libp2p-yamux";
 import { gossipsub } from "@chainsafe/libp2p-gossipsub";
 import { identify } from "@libp2p/identify";
-import { generateKeyPair, privateKeyFromRaw } from '@libp2p/crypto/keys';
-import { peerIdFromPrivateKey } from '@libp2p/peer-id'
+import { generateKeyPair, privateKeyFromRaw } from "@libp2p/crypto/keys";
+import { peerIdFromPrivateKey } from "@libp2p/peer-id";
 
 const BaseLibp2pOptions = {
   peerDiscovery: [
@@ -52,42 +52,68 @@ const BaseLibp2pOptions = {
   },
 };
 
-export const initIPFSInstance = async (dir, tcpPort = '0', wsPort = '0') => {
-  const blockstore = new LevelBlockstore(dir)
-  const peerIdPath = path.join(dir, 'full_key.raw')
+export const initIPFSInstance = async (dir, tcpPort = "0", wsPort = "0") => {
+  const blockstore = new LevelBlockstore(dir);
+  const peerIdPath = path.join(dir, "full_key.raw");
 
-  let privateKey
+  let privateKey;
 
   try {
-    console.log('Loading existing PeerId...')
+    console.log("Loading existing PeerId...");
     const loadedKeyBytes = await fs.readFile(peerIdPath);
     const restoredKey = await privateKeyFromRaw(loadedKeyBytes);
     privateKey = restoredKey;
-    const peerId = await peerIdFromPrivateKey(privateKey)    
-    console.log(`Loaded PeerId:`, peerId)
+    const peerId = await peerIdFromPrivateKey(privateKey);
+    console.log(`Loaded PeerId:`, peerId);
   } catch (err) {
-    console.log('No existing PeerId found, generating new one...')
+    console.log("No existing PeerId found, generating new one...");
 
-    privateKey = await generateKeyPair('Ed25519')
-    const peerId = await peerIdFromPrivateKey(privateKey)    
-    console.log(`Generated new PeerId:`, peerId)
+    privateKey = await generateKeyPair("Ed25519");
+    const peerId = await peerIdFromPrivateKey(privateKey);
+    console.log(`Generated new PeerId:`, peerId);
 
-    await fs.writeFile(peerIdPath, privateKey.raw)
+    await fs.writeFile(peerIdPath, privateKey.raw);
   }
 
   const libp2pConfig = {
     ...BaseLibp2pOptions,
     privateKey,
-    addresses: {         
-      listen: [
-        `/ip4/0.0.0.0/tcp/${tcpPort}`,
-        `/ip4/0.0.0.0/tcp/${wsPort}/ws`
-      ],
+    addresses: {
+      listen: [`/ip4/0.0.0.0/tcp/${tcpPort}`, `/ip4/0.0.0.0/tcp/${wsPort}/ws`],
     },
   };
 
-  const libp2p = await createLibp2p(libp2pConfig)
+  const libp2p = await createLibp2p(libp2pConfig);
 
-  return createHelia({ libp2p, blockstore })
+  return createHelia({ libp2p, blockstore });
+};
+
+export async function checkConnectionsEncryption(libp2p) {
+  const connections = libp2p.getConnections();
+
+  if (connections.length === 0) {
+    console.log("No active connections to check.");
+    return;
+  }
+
+  console.log(`Checking ${connections.length} connection(s):`);
+
+  connections.forEach((connection, index) => {
+    const securityProtocol = connection.encryption ?? "N/A";
+
+    const isEncryptedWithNoise = securityProtocol.includes("/noise");
+
+    console.log(`  Security Protocol: ${securityProtocol}`);
+    console.log(`  Encrypted with Noise: ${isEncryptedWithNoise}`);
+
+    if (!isEncryptedWithNoise && securityProtocol !== "N/A") {
+      console.warn(
+        `    WARNING: Connection is secured with ${securityProtocol}, not Noise!`,
+      );
+    } else if (securityProtocol === "N/A" && connection.status === "open") {
+      console.warn(
+        `    WARNING: Could not determine security protocol for open connection. Handshake incomplete or issue?`,
+      );
+    }
+  });
 }
-

@@ -1,10 +1,10 @@
 import { createOrbitDB } from "@orbitdb/core";
 import readline from "readline";
 import { CID } from "multiformats/cid";
-import { initIPFSInstance } from './ipfs/init.js';
+import { checkConnectionsEncryption, initIPFSInstance } from "./ipfs/init.js";
 
 (async function () {
-  const ipfs = await initIPFSInstance("./ipfs1", 4002, 4003);
+  const ipfs = await initIPFSInstance("./ipfs1", 5002, 5003);
   const id = await ipfs.libp2p.peerId;
   const addresses = ipfs.libp2p.getMultiaddrs();
 
@@ -17,7 +17,7 @@ import { initIPFSInstance } from './ipfs/init.js';
   const orbitdb = await createOrbitDB({
     ipfs,
     directory: "./orbitdb-node1",
-    id: 'node1'
+    id: "node1",
   });
 
   // Create / Open a database. Defaults to db type "events".
