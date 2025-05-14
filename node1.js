@@ -1,27 +1,43 @@
-import { createOrbitDB } from "@orbitdb/core";
+import { createOrbitDB, Identities, OrbitDBAccessController } from "@orbitdb/core";
 import readline from "readline";
 import { CID } from "multiformats/cid";
 import { checkConnectionsEncryption, initIPFSInstance } from "./ipfs/init.js";
 
 (async function () {
   const ipfs = await initIPFSInstance("./ipfs1", 5002, 5003);
-  const id = await ipfs.libp2p.peerId;
+  const peer_id = await ipfs.libp2p.peerId;
   const addresses = ipfs.libp2p.getMultiaddrs();
 
-  console.log(`🆔 [Node1] Peer ID: ${id.toString()}`);
+  console.log(`🆔 [Node1] Peer ID: ${peer_id.toString()}`);
   console.log("🌐 可连接地址:");
   addresses.forEach((addr) => {
     console.log(`  - ${addr.toString()}`);
   });
 
+  const id = 'node1'
+  const identities = await Identities() 
+  const identity = identities.createIdentity({ id })
   const orbitdb = await createOrbitDB({
     ipfs,
     directory: "./orbitdb-node1",
-    id: "node1",
+    id
   });
 
   // Create / Open a database. Defaults to db type "events".
-  const db = await orbitdb.open("hello");
+  const db = await orbitdb.open('hello', { AccessController: OrbitDBAccessController({ write: [orbitdb.identity.id] }) });
+
+  // Log db.access to see what it is
+  console.log("[Node1] Inspecting db.access:", db.access);
+  // Also log the type of db.access and if grant exists
+  console.log("[Node1] Type of db.access:", typeof db.access);
+  if (db.access) {
+    console.log("[Node1] Type of db.access.grant:", typeof db.access.grant);
+  }
+
+  // Grant write access to another peer
+  const node2PublicKey = "023fda5b68b8877bae01209ae81c536f70e4a185aa7b148e16598818a210462ff4"; // 来自 Node2 打印的 identity id
+  await db.access.grant('write', node2PublicKey);
+  console.log(`[Node1] 已授予 ${node2PublicKey} 写入权限`);
 
   const address = db.address;
   console.log("📡 [Node1] OrbitDB 地址:", address.toString());

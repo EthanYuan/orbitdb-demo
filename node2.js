@@ -5,11 +5,11 @@ import { initIPFSInstance } from "./ipfs/init.js";
 
 // Node1 address
 const NODE1_ADDR = multiaddr(
-  "/ip4/127.0.0.1/tcp/5002/p2p/12D3KooWBf8QxggD7bWvdSyuZ5yxFKBY7EZ3eN7izNKkHEDgYqEB",
+  "/ip4/127.0.0.1/tcp/5002/p2p/12D3KooWPcL54P7rAbZYWeprHSKgTYZMhdD4n122Z9P5HqN3SvYC",
 );
 // OrbitDB address by Node1
 const ORBITDB_ADDRESS =
-  "/orbitdb/zdpuAy7oqc2bH8J8xgns27ne2vKWZMzXpmjwhcwAKk7WCea1u";
+  "/orbitdb/zdpuAtmxUQzRf3S1nqch7ck2XedcyVWmDAgNDdjPeFr6TpYWo";
 
 async function waitForPeers(ipfs, minPeers = 1) {
   return new Promise((resolve) => {
@@ -56,6 +56,7 @@ async function waitForPeers(ipfs, minPeers = 1) {
 
   console.log(`📡 [Node2] 正在根据地址打开远程数据库: ${ORBITDB_ADDRESS}`);
   const db = await orbitdb.open(ORBITDB_ADDRESS);
+  console.log("📦 [Node2] identity id", db.identity.id);
 
   db.events.on("update", async (entry) => {
     console.log("\n📥 [Node2] 收到远程新条目:", entry);
@@ -66,6 +67,20 @@ async function waitForPeers(ipfs, minPeers = 1) {
   console.log("📦 [Node2] 初始同步数据记录:");
   for await (const record of db.iterator()) {
     console.log(record);
+  }
+
+  // try writing data
+  try {
+    const dataFromNode2 = { 
+      text: "Hello from Node2!", 
+      timestamp: new Date().toISOString(),
+      sender: "Node2" 
+    };
+    console.log(`\n📝 [Node2] 准备从 Node2 写入数据:`, dataFromNode2);
+    const hash = await db.add(dataFromNode2); 
+    console.log(`✅ [Node2] 数据在本地被添加到操作日志 (oplog hash): ${hash}`);
+  } catch (e) {
+    console.error("❌ [Node2] 尝试写入时发生错误 (这可能是本地操作错误，而非权限拒绝):", e);
   }
 
   setInterval(async () => {
