@@ -1,7 +1,11 @@
-import { createOrbitDB, Identities, OrbitDBAccessController } from "@orbitdb/core";
+import {
+  createOrbitDB,
+  Identities,
+  OrbitDBAccessController,
+} from "@orbitdb/core";
 import readline from "readline";
 import { CID } from "multiformats/cid";
-import { checkConnectionsEncryption, initIPFSInstance } from "./ipfs/init.js";
+import { initIPFSInstance } from "./ipfs/init.js";
 
 (async function () {
   const ipfs = await initIPFSInstance("./ipfs1", 5002, 5003);
@@ -14,17 +18,19 @@ import { checkConnectionsEncryption, initIPFSInstance } from "./ipfs/init.js";
     console.log(`  - ${addr.toString()}`);
   });
 
-  const id = 'node1'
-  const identities = await Identities() 
-  const identity = identities.createIdentity({ id })
+  const id = "node1";
+  const identities = await Identities();
+  const identity = identities.createIdentity({ id });
   const orbitdb = await createOrbitDB({
     ipfs,
     directory: "./orbitdb-node1",
-    id
+    id,
   });
 
   // Create / Open a database. Defaults to db type "events".
-  const db = await orbitdb.open('hello', { AccessController: OrbitDBAccessController({ write: [orbitdb.identity.id] }) });
+  const db = await orbitdb.open("hello", {
+    AccessController: OrbitDBAccessController({ write: [orbitdb.identity.id] }),
+  });
 
   // Log db.access to see what it is
   console.log("[Node1] Inspecting db.access:", db.access);
@@ -35,9 +41,19 @@ import { checkConnectionsEncryption, initIPFSInstance } from "./ipfs/init.js";
   }
 
   // Grant write access to another peer
-  const node2PublicKey = "023fda5b68b8877bae01209ae81c536f70e4a185aa7b148e16598818a210462ff4"; // 来自 Node2 打印的 identity id
-  await db.access.grant('write', node2PublicKey);
+  const node2PublicKey =
+    "023fda5b68b8877bae01209ae81c536f70e4a185aa7b148e16598818a210462ff4"; // 来自 Node2 打印的 identity id
+  await db.access.grant("write", node2PublicKey);
   console.log(`[Node1] 已授予 ${node2PublicKey} 写入权限`);
+
+  const capabilitiesMap = await db.access.capabilities();
+  const allWriters = [];
+  for (const [id, permissions] of capabilitiesMap) {
+    if (permissions.includes("write")) {
+      allWriters.push(id);
+    }
+  }
+  console.log("all writers:", allWriters);
 
   const address = db.address;
   console.log("📡 [Node1] OrbitDB 地址:", address.toString());

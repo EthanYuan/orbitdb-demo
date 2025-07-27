@@ -58,6 +58,8 @@ async function waitForPeers(ipfs, minPeers = 1) {
   const db = await orbitdb.open(ORBITDB_ADDRESS);
   console.log("📦 [Node2] identity id", db.identity.id);
 
+  console.log("[Node1] Inspecting db.access:", db.access);
+
   db.events.on("update", async (entry) => {
     console.log("\n📥 [Node2] 收到远程新条目:", entry);
     const all = await db.all();
@@ -71,16 +73,19 @@ async function waitForPeers(ipfs, minPeers = 1) {
 
   // try writing data
   try {
-    const dataFromNode2 = { 
-      text: "Hello from Node2!", 
+    const dataFromNode2 = {
+      text: "Hello from Node2!",
       timestamp: new Date().toISOString(),
-      sender: "Node2" 
+      sender: "Node2",
     };
     console.log(`\n📝 [Node2] 准备从 Node2 写入数据:`, dataFromNode2);
-    const hash = await db.add(dataFromNode2); 
+    const hash = await db.add(dataFromNode2);
     console.log(`✅ [Node2] 数据在本地被添加到操作日志 (oplog hash): ${hash}`);
   } catch (e) {
-    console.error("❌ [Node2] 尝试写入时发生错误 (这可能是本地操作错误，而非权限拒绝):", e);
+    console.error(
+      "❌ [Node2] 尝试写入时发生错误 (这可能是本地操作错误，而非权限拒绝):",
+      e,
+    );
   }
 
   setInterval(async () => {
