@@ -9,7 +9,7 @@ const NODE1_ADDR = multiaddr(
 );
 // OrbitDB address by Node1
 const ORBITDB_ADDRESS =
-  "/orbitdb/zdpuAtmxUQzRf3S1nqch7ck2XedcyVWmDAgNDdjPeFr6TpYWo";
+  "/orbitdb/zdpuB1L9SGDCt3MBrt2vYBrqQFXJbN9rfkqv9brxcxfHmgqwy";
 
 async function waitForPeers(ipfs, minPeers = 1) {
   return new Promise((resolve) => {

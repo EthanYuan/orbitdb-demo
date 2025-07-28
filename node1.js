@@ -36,24 +36,18 @@ import { initIPFSInstance } from "./ipfs/init.js";
   console.log("[Node1] Inspecting db.access:", db.access);
   // Also log the type of db.access and if grant exists
   console.log("[Node1] Type of db.access:", typeof db.access);
+  console.log(`[Node1] Type of db.access.write:`, db.access.write);
   if (db.access) {
     console.log("[Node1] Type of db.access.grant:", typeof db.access.grant);
   }
 
   // Grant write access to another peer
   const node2PublicKey =
-    "023fda5b68b8877bae01209ae81c536f70e4a185aa7b148e16598818a210462ff4"; // 来自 Node2 打印的 identity id
+    "02493df0898870cd1ef9093403be112e5d72fed5f8a210bdc211e44adf75e901d6"; // 来自 Node2 打印的 identity id
   await db.access.grant("write", node2PublicKey);
   console.log(`[Node1] 已授予 ${node2PublicKey} 写入权限`);
 
-  const capabilitiesMap = await db.access.capabilities();
-  const allWriters = [];
-  for (const [id, permissions] of capabilitiesMap) {
-    if (permissions.includes("write")) {
-      allWriters.push(id);
-    }
-  }
-  console.log("all writers:", allWriters);
+  await printFullAccessController(db);
 
   const address = db.address;
   console.log("📡 [Node1] OrbitDB 地址:", address.toString());
@@ -87,3 +81,44 @@ import { initIPFSInstance } from "./ipfs/init.js";
     process.stdout.write(`🔌 [Node1] 当前连接 Peer 数: ${peers.length}`);
   }, 3000);
 })();
+
+async function printFullAccessController(db) {
+  if (!db || !db.access || typeof db.access.capabilities !== "function") {
+    console.error(
+      "   - Invalid database instance provided for permission check.",
+    );
+    return;
+  }
+
+  try {
+    const fullAddress = db.address.toString();
+    const dbName = fullAddress.split("/").pop();
+    console.log(`\n   --- Access Control List for: ${dbName} ---`);
+
+    // Call the capabilities() function to get the full permission object.
+    const capabilitiesObject = await db.access.capabilities();
+    const capabilitiesKeys = Object.keys(capabilitiesObject);
+
+    if (capabilitiesKeys.length === 0) {
+      console.log("     - No specific capabilities found.");
+    } else {
+      for (const capability of capabilitiesKeys) {
+        const idSet = capabilitiesObject[capability];
+        const idArray = [...idSet];
+
+        if (idArray.length > 0) {
+          console.log(`     - Capability: '${capability}'`);
+          console.log(`       Members: [
+         ${idArray.join(",\n         ")}
+       ]`);
+        }
+      }
+    }
+    console.log("   --------------------------------------------------");
+  } catch (e) {
+    console.error(
+      `   - Error reading permissions for database ${db.address.path}:`,
+      e.message,
+    );
+  }
+}
